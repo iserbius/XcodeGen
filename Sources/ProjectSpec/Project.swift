@@ -193,6 +193,7 @@ extension Project {
             }
             )
         }
+
         if jsonDictionary["options"] != nil {
             options = try jsonDictionary.json(atKeyPath: "options")
         } else {

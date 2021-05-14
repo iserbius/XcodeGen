@@ -5,6 +5,7 @@ import Version
 public struct SpecOptions: Equatable {
     public static let settingPresetsDefault = SettingPresets.all
     public static let createIntermediateGroupsDefault = false
+    public static let createIntermediateGroupsForPackagesDefault = false
     public static let transitivelyLinkDependenciesDefault = false
     public static let groupSortPositionDefault = GroupSortPosition.bottom
     public static let generateEmptyDirectoriesDefault = false
@@ -16,6 +17,7 @@ public struct SpecOptions: Equatable {
     public var carthageBuildPath: String?
     public var carthageExecutablePath: String?
     public var createIntermediateGroups: Bool
+    public var createIntermediateGroupsForPackages: Bool
     public var bundleIdPrefix: String?
     public var settingPresets: SettingPresets
     public var disabledValidations: [ValidationType]
@@ -79,6 +81,7 @@ public struct SpecOptions: Equatable {
         carthageBuildPath: String? = nil,
         carthageExecutablePath: String? = nil,
         createIntermediateGroups: Bool = createIntermediateGroupsDefault,
+        createIntermediateGroupsForPackages: Bool = createIntermediateGroupsForPackagesDefault,
         bundleIdPrefix: String? = nil,
         settingPresets: SettingPresets = settingPresetsDefault,
         developmentLanguage: String? = nil,
@@ -105,6 +108,7 @@ public struct SpecOptions: Equatable {
         self.carthageBuildPath = carthageBuildPath
         self.carthageExecutablePath = carthageExecutablePath
         self.createIntermediateGroups = createIntermediateGroups
+        self.createIntermediateGroupsForPackages = createIntermediateGroupsForPackages
         self.bundleIdPrefix = bundleIdPrefix
         self.settingPresets = settingPresets
         self.developmentLanguage = developmentLanguage
@@ -141,6 +145,7 @@ extension SpecOptions: JSONObjectConvertible {
         bundleIdPrefix = jsonDictionary.json(atKeyPath: "bundleIdPrefix")
         settingPresets = jsonDictionary.json(atKeyPath: "settingPresets") ?? SpecOptions.settingPresetsDefault
         createIntermediateGroups = jsonDictionary.json(atKeyPath: "createIntermediateGroups") ?? SpecOptions.createIntermediateGroupsDefault
+        createIntermediateGroupsForPackages = jsonDictionary.json(atKeyPath: "createIntermediateGroupsForPackages") ?? SpecOptions.createIntermediateGroupsForPackagesDefault
         developmentLanguage = jsonDictionary.json(atKeyPath: "developmentLanguage")
         usesTabs = jsonDictionary.json(atKeyPath: "usesTabs")
         xcodeVersion = jsonDictionary.json(atKeyPath: "xcodeVersion")

@@ -54,10 +54,9 @@ class SourceGenerator {
     }
 
     func createLocalPackage(path: Path) throws {
-
+        let packagesGroupName = project.options.localPackagesGroup ?? "Packages"
         if localPackageGroup == nil {
-            let groupName = project.options.localPackagesGroup ?? "Packages"
-            localPackageGroup = addObject(PBXGroup(sourceTree: .sourceRoot, name: groupName))
+            localPackageGroup = addObject(PBXGroup(sourceTree: .sourceRoot, name: packagesGroupName))
             rootGroups.insert(localPackageGroup!)
         }
 
@@ -74,7 +73,40 @@ class SourceGenerator {
                 path: fileReferencePath
             )
         )
-        localPackageGroup!.children.append(fileReference)
+        if project.options.createIntermediateGroupsForPackages {
+            let pkgSubGroups = path.components.dropLast().filter { $0 != packagesGroupName }
+            if pkgSubGroups.count > 0 {
+                var idx = 0
+                var lastFoundGroup: PBXGroup?
+                while (idx < pkgSubGroups.count) {
+                    if let existedGroup: PBXGroup = (lastFoundGroup ?? localPackageGroup)?.children.first(where: { $0.name == pkgSubGroups[idx] }) as? PBXGroup {
+                        lastFoundGroup = existedGroup
+                        if pkgSubGroups.indices.contains(idx + 1) {
+                            idx += 1
+                            continue
+                        } else {
+                            existedGroup.children.append(fileReference)
+                        }
+                    } else {
+                        let newGroup = addObject(PBXGroup(sourceTree: .group, name: pkgSubGroups[idx]))
+
+                        if pkgSubGroups.indices.contains(idx + 1) {
+                            idx += 1
+                            (lastFoundGroup ?? localPackageGroup)?.children.append(newGroup)
+                            lastFoundGroup = newGroup
+                            continue
+                        } else {
+                            newGroup.children.append(fileReference)
+                            (lastFoundGroup ?? localPackageGroup)?.children.append(newGroup)
+                            lastFoundGroup = newGroup
+                        }
+                    }
+                    idx += 1
+                }
+            }
+        } else {
+            localPackageGroup?.children.append(fileReference)
+        }
     }
 
     /// Collects an array complete of all `SourceFile` objects that make up the target based on the provided `TargetSource` definitions.
