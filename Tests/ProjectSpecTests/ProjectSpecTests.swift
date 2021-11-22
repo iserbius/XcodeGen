@@ -359,6 +359,9 @@ class ProjectSpecTests: XCTestCase {
                 try expectVariant("Dev", for: Config(name: "Dev_debug", type: .debug), matches: true)
                 try expectVariant("Prod", for: Config(name: "PreProd debug", type: .debug), matches: false)
                 try expectVariant("Develop", for: Config(name: "Dev debug", type: .debug), matches: false)
+                try expectVariant("Development", for: Config(name: "Debug (Development)", type: .debug), matches: true)
+                try expectVariant("Staging", for: Config(name: "Debug (Staging)", type: .debug), matches: true)
+                try expectVariant("Production", for: Config(name: "Debug (Production)", type: .debug), matches: true)
             }
         }
     }
@@ -395,7 +398,8 @@ class ProjectSpecTests: XCTestCase {
                                                                               codeSign: true,
                                                                               link: true,
                                                                               implicit: true,
-                                                                              weakLink: true)],
+                                                                              weakLink: true,
+                                                                              copyPhase: BuildPhaseSpec.CopyFilesSettings(destination: .frameworks, subpath: "example", phaseOrder: .postCompile))],
                                                     info: Plist(path: "info.plist", attributes: ["foo": "bar"]),
                                                     entitlements: Plist(path: "entitlements.plist", attributes: ["foo": "bar"]),
                                                     transitivelyLinkDependencies: true,

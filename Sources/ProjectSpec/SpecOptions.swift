@@ -192,7 +192,7 @@ extension SpecOptions: JSONEncodable {
             "localPackagesGroup": localPackagesGroup,
             "preGenCommand": preGenCommand,
             "postGenCommand": postGenCommand,
-            "fileTypes": fileTypes
+            "fileTypes": fileTypes.mapValues { $0.toJSONValue() }
         ]
 
         if settingPresets != SpecOptions.settingPresetsDefault {

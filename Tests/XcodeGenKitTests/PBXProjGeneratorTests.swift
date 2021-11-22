@@ -300,4 +300,81 @@ class PBXProjGeneratorTests: XCTestCase {
             XCTAssertEqual(pbxProject.attributes[lastUpgradeKey] as? String, project.xcodeVersion)
         }
     }
+
+    func testPlatformDependencies() {
+        describe {
+            let directoryPath = Path("TestDirectory")
+
+            func createDirectories(_ directories: String) throws {
+                let yaml = try Yams.load(yaml: directories)!
+
+                func getFiles(_ file: Any, path: Path) -> [Path] {
+                    if let array = file as? [Any] {
+                        return array.flatMap { getFiles($0, path: path) }
+                    } else if let string = file as? String {
+                        return [path + string]
+                    } else if let dictionary = file as? [String: Any] {
+                        var array: [Path] = []
+                        for (key, value) in dictionary {
+                            array += getFiles(value, path: path + key)
+                        }
+                        return array
+                    } else {
+                        return []
+                    }
+                }
+
+                let files = getFiles(yaml, path: directoryPath).filter { $0.extension != nil }
+                for file in files {
+                    try file.parent().mkpath()
+                    try file.write("")
+                }
+            }
+
+            func removeDirectories() {
+                try? directoryPath.delete()
+            }
+
+            $0.before {
+                removeDirectories()
+            }
+
+            $0.after {
+                removeDirectories()
+            }
+
+            $0.it("setups target with different dependencies") {
+                let directories = """
+                    Sources:
+                      - MainScreen:
+                        - Entities:
+                            - file.swift
+                """
+                try createDirectories(directories)
+                let target1 = Target(name: "TestAll", type: .application, platform: .iOS, sources: ["Sources"])
+                let target2 = Target(name: "TestiOS", type: .application, platform: .iOS, sources: ["Sources"])
+                let target3 = Target(name: "TestmacOS", type: .application, platform: .iOS, sources: ["Sources"])
+                let dependency1 = Dependency(type: .target, reference: "TestAll", platformFilter: .all)
+                let dependency2 = Dependency(type: .target, reference: "TestiOS", platformFilter: .iOS)
+                let dependency3 = Dependency(type: .target, reference: "TestmacOS", platformFilter: .macOS)
+                let dependency4 = Dependency(type: .package(product: "Swinject"), reference: "Swinject", platformFilter: .iOS)
+                let target = Target(name: "Test", type: .application, platform: .iOS, sources: ["Sources"], dependencies: [dependency1, dependency2, dependency3, dependency4])
+                let swinjectPackage = SwiftPackage.remote(url: "https://github.com/Swinject/Swinject", versionRequirement: .exact("2.8.0"))
+                let project = Project(basePath: directoryPath, name: "Test", targets: [target, target1, target2, target3], packages: ["Swinject": swinjectPackage])
+
+                let pbxProj = try project.generatePbxProj()
+
+                let targets = pbxProj.projects.first?.targets
+                let testTarget = pbxProj.projects.first?.targets.first(where: { $0.name == "Test" })
+                let testTargetDependencies = testTarget?.dependencies
+                try expect(targets?.count) == 4
+                try expect(testTargetDependencies?.count) == 3
+                try expect(testTargetDependencies?[0].platformFilter).beNil()
+                try expect(testTargetDependencies?[1].platformFilter) == "ios"
+                try expect(testTargetDependencies?[2].platformFilter) == "maccatalyst"
+                try expect(testTarget?.frameworksBuildPhase()?.files?.count) == 1
+                try expect(testTarget?.frameworksBuildPhase()?.files?[0].platformFilter) == "ios"
+            }
+        }
+    }
 }
