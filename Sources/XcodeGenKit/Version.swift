@@ -12,7 +12,7 @@ extension Project {
     }
 
     var compatibilityVersion: String {
-        "Xcode 10.0"
+        "Xcode 13.0"
     }
 
     var objectVersion: UInt {
