@@ -83,6 +83,7 @@ class SourceGenerator {
         )
 
         if project.options.createIntermediateGroupsForPackages {
+            let packagesGroupName = project.options.localPackagesGroup ?? "Packages"
             let pkgSubGroups = path.components.dropLast().filter { $0 != packagesGroupName }
             if pkgSubGroups.count > 0 {
                 var idx = 0
