@@ -83,6 +83,10 @@ public struct Project: BuildSettingsContainer {
         targetsMap[targetName]
     }
 
+    public func getPackage(_ packageName: String) -> SwiftPackage? {
+        packages[packageName]
+    }
+
     public func getAggregateTarget(_ targetName: String) -> AggregateTarget? {
         aggregateTargetsMap[targetName]
     }
@@ -151,7 +155,14 @@ extension Project: Equatable {
 extension Project {
 
     public init(path: Path) throws {
-        let spec = try SpecFile(path: path)
+        var cachedSpecFiles: [Path: SpecFile] = [:]
+        let spec = try SpecFile(filePath: path, basePath: path.parent(), cachedSpecFiles: &cachedSpecFiles)
+        try self.init(spec: spec)
+    }
+
+    public init(path: Path, basePath: Path) throws {
+        var cachedSpecFiles: [Path: SpecFile] = [:]
+        let spec = try SpecFile(filePath: path, basePath: basePath, cachedSpecFiles: &cachedSpecFiles)
         try self.init(spec: spec)
     }
 
@@ -189,7 +200,7 @@ extension Project {
             packages.merge(localPackages.reduce(into: [String: SwiftPackage]()) {
                 // Project name will be obtained by resolved abstractpath's lastComponent for dealing with some path case, like "../"
                 let packageName = (basePath + Path($1).normalize()).lastComponent
-                $0[packageName] = .local(path: $1)
+                $0[packageName] = .local(path: $1, group: nil)
             }
             )
         }
@@ -227,6 +238,7 @@ extension Project: PathContainer {
             .object("targets", Target.pathProperties),
             .object("targetTemplates", Target.pathProperties),
             .object("aggregateTargets", AggregateTarget.pathProperties),
+            .object("schemes", Scheme.pathProperties),
             .object("projectReferences", ProjectReference.pathProperties),
         ]
     }

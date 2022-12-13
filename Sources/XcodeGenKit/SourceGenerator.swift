@@ -53,15 +53,23 @@ class SourceGenerator {
         return object
     }
 
-    func createLocalPackage(path: Path) throws {
-        let packagesGroupName = project.options.localPackagesGroup ?? "Packages"
-        if localPackageGroup == nil {
-            localPackageGroup = addObject(PBXGroup(sourceTree: .sourceRoot, name: packagesGroupName))
+
+    func createLocalPackage(path: Path, group: Path?) throws {
+        var pbxGroup: PBXGroup?
+        
+        if let location = group {
+            let fullLocationPath = project.basePath + location
+            pbxGroup = getGroup(path: fullLocationPath, mergingChildren: [], createIntermediateGroups: true, hasCustomParent: false, isBaseGroup: true)
+        }
+        
+        if localPackageGroup == nil && group == nil {
+            let groupName = project.options.localPackagesGroup ?? "Packages"
+            localPackageGroup = addObject(PBXGroup(sourceTree: .sourceRoot, name: groupName))
             rootGroups.insert(localPackageGroup!)
         }
-
+        
         let absolutePath = project.basePath + path.normalize()
-
+        
         // Get the local package's relative path from the project root
         let fileReferencePath = try? absolutePath.relativePath(from: projectDirectory ?? project.basePath).string
 
@@ -73,6 +81,7 @@ class SourceGenerator {
                 path: fileReferencePath
             )
         )
+
         if project.options.createIntermediateGroupsForPackages {
             let pkgSubGroups = path.components.dropLast().filter { $0 != packagesGroupName }
             if pkgSubGroups.count > 0 {
@@ -105,7 +114,12 @@ class SourceGenerator {
                 }
             }
         } else {
-            localPackageGroup?.children.append(fileReference)
+
+            if let pbxGroup = pbxGroup {
+                pbxGroup.children.append(fileReference)
+            } else {
+                localPackageGroup!.children.append(fileReference)
+            }
         }
     }
 
@@ -381,7 +395,7 @@ class SourceGenerator {
         let rootSourcePath = project.basePath + targetSource.path
 
         return Set(
-            patterns.map { pattern in
+            patterns.parallelMap { pattern in
                 guard !pattern.isEmpty else { return [] }
                 return Glob(pattern: "\(rootSourcePath)/\(pattern)")
                     .map { Path($0) }
